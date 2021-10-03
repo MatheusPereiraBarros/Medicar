@@ -5,7 +5,6 @@ from django.db.models.base import Model
 from django.db.models.expressions import F
 from phonenumber_field.modelfields import PhoneNumberField
 
-
 class EspecialidadeMedica(models.Model):
 
     nome_especialidade = models.CharField(verbose_name="Especialidade", max_length=200, blank=False, null=False)
@@ -34,8 +33,8 @@ class Medico(models.Model):
 
 
 class HorarioAgenda(models.Model):
+
     horario = models.TimeField(verbose_name="Horário")
-    
     def __str__(self):
         return F"Horário: {self.horario}"
 
@@ -43,27 +42,21 @@ class HorarioAgenda(models.Model):
         verbose_name = "Horário"
         verbose_name_plural = "Horários"
 
+
 class AgendaMedica(models.Model):
 
     medico = models.ForeignKey(Medico, verbose_name="Médico", null=False, blank=False, on_delete=models.CASCADE)
     dia = models.DateField(verbose_name="Dia do agendamento", null=False, blank=False)
-    data_agendamento = models.DateTimeField(auto_now=True, null=False, blank=False)
     horarios = models.ManyToManyField(HorarioAgenda, verbose_name="Horários")
-
-
-
-    
+    data_agendamento = models.DateTimeField(auto_now_add=True, null=False, blank=False)
     def clean(self, *args, **kwargs):
         if self.dia < datetime.now().date():
             raise ValidationError("Não é possível criar agenda para um dia anterior ao atual")
         elif(AgendaMedica.objects.filter(medico=self.medico, dia=self.dia).exists()):
-            raise ValidationError("Já existe uma agenda para este médico neste dia")
+            raise ValidationError(f"Já existe uma agenda para este médico no dia {self.dia}")
         else:
             super().save(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super().save(*args, **kwargs)
         
     def __str__(self):
         return F"Agenda do {self.medico} em {self.dia}"
